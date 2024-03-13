@@ -847,10 +847,9 @@ def build_diagonal_quartic_coupling(quartic_terms, A, N, diagonal=False):
         ])
 
 
-def build_parameter_section(diagonal_model, flag_diagonal=False, highest_order = 1):
+def build_parameter_section(diagonal_model, flag_diagonal=False, highest_order=1):
     """Returns a string which defines the `PARAMETER-SECTION` of an .op file"""
-    start = "PARAMETER-SECTION"
-    end = "end-parameter-section"
+    start, end = "PARAMETER-SECTION", "end-parameter-section"
     header_string = "#{:^47}#\n#{:^47}#\n"
 
     A, N = diagonal_model[VMK.A], diagonal_model[VMK.N]
@@ -867,7 +866,8 @@ def build_parameter_section(diagonal_model, flag_diagonal=False, highest_order =
         build_magnetic_moments(diagonal_model),
         header_string.format(headers[4], '-' * 45),
         build_linear_coupling(diagonal_model[VMK.G1], A, N, flag_diagonal),
-        ]
+    ]
+
     if highest_order > 1:
         return_list.append(header_string.format(headers[5], '-' * 45))
         return_list.append(build_diagonal_quadratic_coupling(diagonal_model[VMK.G2], A, N, flag_diagonal))

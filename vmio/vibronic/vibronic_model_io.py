@@ -721,9 +721,9 @@ def prepare_model_for_cc_integration(model, highest_order):
         key = VMK.key_list()[index]
         if highest_order >= index:
             if key not in model:
-               # A, N = vIO.extract_dimensions_of_model(model)
+                # A, N = vIO.extract_dimensions_of_model(model)
                 A, N = extract_dimensions_of_model(model)
-              #  model[key] = np.zeros(vIO.model_shape_dict(A, N)[key], dtype=float)
+                #  model[key] = np.zeros(vIO.model_shape_dict(A, N)[key], dtype=float)
                 model[key] = np.zeros(model_shape_dict(A, N)[key], dtype=float)
 
             swap_coupling_coefficient_axes(model, coeff_order=index)
@@ -884,12 +884,14 @@ def read_model_op_file(
     **kwargs
 ):
     """Symmetrize both surfaces and modes up to quadratic terms."""
+    if highest_order is not None:
+        kwargs["highest_order"] = highest_order
+
     model = model_op.read_model_op_file(
         path_file_op,
         surface_symmetrize=surface_symmetrize,
         double_quadratic=double_quadratic,
         symmetrize_quadratic=symmetrize_quadratic,
-        highest_order=highest_order,
         **kwargs
     )
 
