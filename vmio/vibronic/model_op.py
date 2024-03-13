@@ -78,8 +78,8 @@ def extract_energies(path, memmap):
     energies = np.zeros((A, A))
     for a in range(A):
         list_of_words = lines[a].split()
-        assert list_of_words[0] == f"EH_s{a+1:02}_s{a+1:02}"
-        assert list_of_words[-1] == "ev"
+        assert list_of_words[0] == f"EH_s{a+1:02}_s{a+1:02}", f"{list_of_words=}\nEH_s{a+1:02}_s{a+1:02}"
+        assert list_of_words[-1] == "ev", f"{list_of_words[-1]=}"
         energies[a, a] = list_of_words[2]
 
     return energies, A
@@ -245,7 +245,13 @@ def parse_lines(lines, coupling_terms, order=None):
     for line in lines:
         if line is not None:
             r = p.parse(line[0])
-            index_tuple = make_index_tuple(r)
+            assert r != None, f"Failed to parse\n{line=}\nInstead got {r=}? Line probably doesn't match any parse patterns"
+            try:
+                index_tuple = make_index_tuple(r)
+            except TypeError as e:
+                print(r, line)
+                # breakpoint()
+                raise (str(e))
             coupling_terms[index_tuple] = line[1]
 
     return
