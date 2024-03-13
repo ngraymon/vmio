@@ -1155,9 +1155,8 @@ def build_magnetic_section(model, flag_diagonal=False):
     return string
 
 
-def generate_op_file_data(model, flag_diagonal=False, highest_order=1):
-    """Returns a string formatted for a .op file using information from `model` and r"""
-    end = "end-operator"
+def enforce_proper_keys_are_present_in_model(model, flag_diagonal=False, highest_order=1):
+    """ Force all keys to be present, fill with zeros (from `template_model`) if not present """
 
     from .vibronic_model_io import (
         diagonal_model_zeros_template_json_dict,
@@ -1174,21 +1173,27 @@ def generate_op_file_data(model, flag_diagonal=False, highest_order=1):
 
         # only include keys up to highest order
         if n+1 > highest_order:
-            continue
+            break
 
         if key not in model.keys():
             model[key] = template_model[key]
 
     # also force the dipole moments to exist
-
     for key in [VMK.etdm, VMK.mtdm]:
         if key not in model.keys():
             model[key] = template_model[key]
+
+    return  # model is dictionary, no return needed
+
+
+def generate_op_file_data(model, flag_diagonal=False, highest_order=1):
+    """ Returns a string formatted for a .op file using information from `model` """
+    enforce_proper_keys_are_present_in_model(model, flag_diagonal, highest_order)
 
     return '\n\n\n'.join([
         build_op_section(),
         build_parameter_section(model, flag_diagonal, highest_order=highest_order),
         build_hamiltonian_section(model, flag_diagonal, highest_order=highest_order),
         build_dipole_moments_section(model, flag_diagonal),
-        end,
+        "end-operator",
     ])
