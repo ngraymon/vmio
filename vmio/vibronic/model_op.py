@@ -33,8 +33,8 @@ headers = [
     'Electronic transition moments',
     'Magnetic transition moments',
     'Linear Coupling Constants',
-    'Diagonal Quadratic Coupling Constants',
-    'Off_diagonal Quadratic Coupling Constants',
+    'Quadratic Coupling Constants',
+    'Bilinear Coupling Constants',
     'Cubic Coupling Constants',
     'Quartic Coupling Constants',
     'Quintic Coupling Constants',
@@ -216,6 +216,9 @@ def parse_lines(lines, coupling_terms, order=None):
     if order == 'C1':
         p = parse.compile("C1_s{a1:d}_s{a2:d}_v{j:d}")
         make_index_tuple = lambda r: (r['j']-1, r['a1']-1, r['a2']-1)
+    elif order == 'C1b':  # bilinear
+        p = parse.compile("C1_s{a1:d}s{a2:d}_v{j1:d}v{j2:d}")
+        make_index_tuple = lambda r: (r['j1']-1, r['j2']-1, r['a1']-1, r['a2']-1)
     elif order == 'C2':
         p = parse.compile("C2_s{a1:d}s{a2:d}_v{j1:d}v{j2:d}")
         make_index_tuple = lambda r: (r['j1']-1, r['j2']-1, r['a1']-1, r['a2']-1)
@@ -245,7 +248,7 @@ def parse_lines(lines, coupling_terms, order=None):
     for line in lines:
         if line is not None:
             r = p.parse(line[0])
-            assert r != None, f"Failed to parse\n{line=}\nInstead got {r=}? Line probably doesn't match any parse patterns"
+            assert r is not None, f"Failed to parse\n{line=}\nInstead got {r=}? Line probably doesn't match any parse patterns for {order=}"
             try:
                 index_tuple = make_index_tuple(r)
             except TypeError as e:
@@ -348,17 +351,17 @@ def extract_linear_couplings(path, memmap, linear):
 
 def extract_quadratic_couplings(path, memmap, quadratic):
     """calls extract_string_list() with appropriate parameters so as to fill the quadratic coupling term array with values from the *.op file"""
-    idx = headers.index('Diagonal Quadratic Coupling Constants')
+    idx = headers.index('Quadratic Coupling Constants')
     lines = extract_string_list(path, memmap, header_index=idx)
     parse_lines(lines, quadratic, order='C2')
     return
 
 
-def extract_offdiagonal_quadratic_couplings(path, memmap, quadratic):
-    """calls extract_string_list() with appropriate parameters so as to fill the quadratic coupling term array with values from the *.op file"""
-    idx = headers.index('Off_diagonal Quadratic Coupling Constants')
+def extract_bilinear_couplings(path, memmap, quadratic):
+    """calls extract_string_list() with appropriate parameters so as to fill the quadratic/bilinear coupling term array with values from the *.op file"""
+    idx = headers.index('Bilinear Coupling Constants')
     lines = extract_string_list(path, memmap, header_index=idx)
-    parse_lines(lines, quadratic, order='C2')
+    parse_lines(lines, quadratic, order='C1b')
     return
 
 
@@ -590,8 +593,7 @@ def read_model_op_file(
                 extract_linear_couplings(path_file_op, mm, linear)
             if highest_order >= 2:
                 extract_quadratic_couplings(path_file_op, mm, quadratic)
-            if highest_order >= 2:
-                extract_offdiagonal_quadratic_couplings(path_file_op, mm, quadratic)
+                extract_bilinear_couplings(path_file_op, mm, quadratic)
             if highest_order >= 3:
                 extract_cubic_couplings(path_file_op, mm, cubic)
             if highest_order >= 4:
