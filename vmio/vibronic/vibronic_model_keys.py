@@ -13,6 +13,7 @@ class VibronicModelKeys(Enum):
     electronic_transition_dipole_moments = "electronic transition dipole moments"
     magnetic_transition_dipole_moments = "magnetic transition dipole moments"
     linear_couplings = "linear couplings"
+    bi_linear_couplings = "bi linear couplings"
     quadratic_couplings = "quadratic couplings"
     cubic_couplings = "cubic couplings"
     quartic_couplings = "quartic couplings"
@@ -25,6 +26,7 @@ class VibronicModelKeys(Enum):
     etdm = electronic_transition_dipole_moments
     mtdm = magnetic_transition_dipole_moments
     G1 = linear_couplings
+    G1b = bi_linear_couplings
     G2 = quadratic_couplings
     G3 = cubic_couplings
     G4 = quartic_couplings
