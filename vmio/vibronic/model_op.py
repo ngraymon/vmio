@@ -466,6 +466,7 @@ def double_quadratic_terms(number_of_modes, States, quadratic_terms):
 def mode_symmetrize_from_lower_triangle_quadratic_terms(number_of_modes, States, quadratic_terms):
     """If the quadratic terms are zero in the upper triangle then we copy the lower triangle to the upper triangle and multiply the diagonal terms by 2.
     This assumes the values are in the lower triangle.
+    Note that the order of upper and lower triangle indices are slightly different so we need to reverse.
     """
 
     upper_triangle_idx = np.triu_indices(number_of_modes, k=1)
@@ -480,12 +481,13 @@ def mode_symmetrize_from_lower_triangle_quadratic_terms(number_of_modes, States,
             )
     else:
         for a, b in it.product(States, States):
-            quadratic_terms[(*upper_triangle_idx, a, b)] = quadratic_terms[(*lower_triangle_idx, a, b)]
+            quadratic_terms[(*reversed(lower_triangle_idx), a, b)] = quadratic_terms[(*lower_triangle_idx, a, b)]
 
 
 def mode_symmetrize_from_upper_triangle_quadratic_terms(number_of_modes, States, quadratic_terms):
     """If the quadratic terms are zero in the upper triangle then we copy the lower triangle to the upper triangle and multiply the diagonal terms by 2.
     This assumes the values are in the lower triangle.
+    Note that the order of upper and lower triangle indices are slightly different so we need to reverse.
     """
 
     upper_triangle_idx = np.triu_indices(number_of_modes, k=1)
@@ -499,7 +501,7 @@ def mode_symmetrize_from_upper_triangle_quadratic_terms(number_of_modes, States,
             )
     else:
         for a, b in it.product(States, States):
-            quadratic_terms[(*lower_triangle_idx, a, b)] = quadratic_terms[(*upper_triangle_idx, a, b)]
+            quadratic_terms[(*reversed(upper_triangle_idx), a, b)] = quadratic_terms[(*upper_triangle_idx, a, b)]
 
 
 def read_model_op_file(
