@@ -864,14 +864,15 @@ def create_random_diagonal_model():
 # ------------------------------------------------------------------------
 def read_raw_model_op_file(path_file_op, highest_order=2, **kwargs):
     """When you want to "read as written" (RAW) the op file. Data will not be symmetrized."""
-    return model_op.read_model_op_file(
-        path_file_op,
-        surface_symmetrize=False,
-        symmetrize_quadratic=False,
-        double_quadratic=False,
-        highest_order=highest_order,
-        **kwargs
-    )
+
+    if 'surface_symmetrize' not in kwargs:
+        kwargs['surface_symmetrize'] = False
+    if 'symmetrize_quadratic' not in kwargs:
+        kwargs['symmetrize_quadratic'] = False
+    if 'double_quadratic' not in kwargs:
+        kwargs['double_quadratic'] = False
+
+    return model_op.read_model_op_file(path_file_op, highest_order=highest_order, **kwargs)
 
 
 def read_model_op_file(
