@@ -447,7 +447,9 @@ def surface_symmetrize_coupling_terms(Modes, States, *coupling_terms):
 
 
 def double_quadratic_terms(number_of_modes, States, quadratic_terms):
-    """If the quadratic terms are symmetric in the modes, or have an upper triangle of all zeros then we multiple all quadratic factors by 2 to account for the 1/2 factor in our mathematical definition. This option leaves the elements as they were, and does not attempt to symmetrize the model."""
+    """If the quadratic terms are symmetric in the modes, or have an upper triangle of all zeros then we multiple all quadratic factors by 2 to account for the 1/2 factor in our mathematical definition.
+    This option leaves the elements as they were, and does not attempt to symmetrize the model.
+    """
 
     upper_triangle_idx = np.triu_indices(number_of_modes, k=1)
 
@@ -461,8 +463,10 @@ def double_quadratic_terms(number_of_modes, States, quadratic_terms):
         quadratic_terms[:] *= 2.0
 
 
-def mode_symmetrize_quadratic_terms(number_of_modes, States, quadratic_terms):
-    """If the quadratic terms are zero in the upper triangle then we copy the lower triangle to the upper triangle and multiply the diagonal terms by 2."""
+def mode_symmetrize_from_lower_triangle_quadratic_terms(number_of_modes, States, quadratic_terms):
+    """If the quadratic terms are zero in the upper triangle then we copy the lower triangle to the upper triangle and multiply the diagonal terms by 2.
+    This assumes the values are in the lower triangle.
+    """
 
     upper_triangle_idx = np.triu_indices(number_of_modes, k=1)
     lower_triangle_idx = np.tril_indices(number_of_modes, k=-1)
@@ -477,6 +481,25 @@ def mode_symmetrize_quadratic_terms(number_of_modes, States, quadratic_terms):
     else:
         for a, b in it.product(States, States):
             quadratic_terms[(*upper_triangle_idx, a, b)] = quadratic_terms[(*lower_triangle_idx, a, b)]
+
+
+def mode_symmetrize_from_upper_triangle_quadratic_terms(number_of_modes, States, quadratic_terms):
+    """If the quadratic terms are zero in the upper triangle then we copy the lower triangle to the upper triangle and multiply the diagonal terms by 2.
+    This assumes the values are in the lower triangle.
+    """
+
+    upper_triangle_idx = np.triu_indices(number_of_modes, k=1)
+    lower_triangle_idx = np.tril_indices(number_of_modes, k=-1)
+
+    for a, b in it.product(States, States):
+        if not np.all(quadratic_terms[(*lower_triangle_idx, a, b)] == 0.0):
+            raise Exception(
+                f"The lower triangle at a({a}), b({b}) is not all zeros, "
+                "therefore we cannot symmetrize along the modes\n"
+            )
+    else:
+        for a, b in it.product(States, States):
+            quadratic_terms[(*lower_triangle_idx, a, b)] = quadratic_terms[(*upper_triangle_idx, a, b)]
 
 
 def read_model_op_file(
@@ -588,7 +611,7 @@ def read_model_op_file(
         if double_quadratic:
             double_quadratic_terms(N, States, quadratic)
         elif symmetrize_quadratic:
-            mode_symmetrize_quadratic_terms(N, States, quadratic)
+            mode_symmetrize_from_lower_triangle_quadratic_terms(N, States, quadratic)
         else:
             log.warning("We didn't change the quadratic terms in any way, make sure this was intentional!!!")
 
