@@ -217,7 +217,7 @@ def parse_lines(lines, coupling_terms, order=None):
         p = parse.compile("C1_s{a1:d}_s{a2:d}_v{j:d}")
         make_index_tuple = lambda r: (r['j']-1, r['a1']-1, r['a2']-1)
     elif order == 'C1b':  # bilinear
-        p = parse.compile("C1_s{a1:d}s{a2:d}_v{j1:d}v{j2:d}")
+        p = parse.compile("C1b_s{a1:d}s{a2:d}_v{j1:d}v{j2:d}")
         make_index_tuple = lambda r: (r['j1']-1, r['j2']-1, r['a1']-1, r['a2']-1)
     elif order == 'C2':
         p = parse.compile("C2_s{a1:d}s{a2:d}_v{j1:d}v{j2:d}")
