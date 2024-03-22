@@ -76,11 +76,38 @@ def extract_energies(path, memmap):
 
     # save the reference Hamiltonian into the energies array
     energies = np.zeros((A, A))
-    for a in range(A):
+
+    # this needs to be changed to support off-diagonal energy values
+    for a in range(A):  # old style
         list_of_words = lines[a].split()
         assert list_of_words[0] == f"EH_s{a+1:02}_s{a+1:02}", f"{list_of_words=}\nEH_s{a+1:02}_s{a+1:02}"
         assert list_of_words[-1] == "ev", f"{list_of_words[-1]=}"
         energies[a, a] = list_of_words[2]
+
+    # most likely we would use parse to process the lines
+    # this assumes that the first index is the row index and the second the column index
+    if False:
+        parse_pattern = "EH_s{a1:d}_s{a2:d}"
+        p = parse.compile(parse_pattern)
+        for line in lines:
+            if line is None:  # skip all empties
+                continue
+            if "EH" not in line:  # expect EH prefix
+                print(f"Line is malformed, missing EH?\n{line=}"); breakpoint()
+                raise Exception()
+
+            list_of_words = line.split()
+            assert list_of_words[-1] == "ev", f"Can only handle energy units in eV not {list_of_words[-1]=}"
+
+            r = p.parse(list_of_words[0])
+            assert r != None, f"Failed to parse\n{line=}\nInstead got {r=}? Line probably doesn't match the {parse_pattern=}"
+            try:
+                a1, a2 = r['a1'], r['a2']
+                energies[a1, a2] = float(list_of_words[2])
+            except TypeError as e:
+                print(r, line); breakpoint()
+                raise (str(e))
+
 
     return energies, A
 
@@ -243,16 +270,16 @@ def parse_lines(lines, coupling_terms, order=None):
         raise Exception("Order parameter can only take on the values {C1,C2,C3,C4,C5,C6,B3,B4,A4}")
 
     for line in lines:
-        if line is not None:
-            r = p.parse(line[0])
-            assert r != None, f"Failed to parse\n{line=}\nInstead got {r=}? Line probably doesn't match any parse patterns"
-            try:
-                index_tuple = make_index_tuple(r)
-            except TypeError as e:
-                print(r, line)
-                # breakpoint()
-                raise (str(e))
-            coupling_terms[index_tuple] = line[1]
+        if line is None:
+            continue
+        r = p.parse(line[0])
+        assert r != None, f"Failed to parse\n{line=}\nInstead got {r=}? Line probably doesn't match any parse patterns"
+        try:
+            index_tuple = make_index_tuple(r)
+        except TypeError as e:
+            print(r, line); breakpoint()
+            raise (str(e))
+        coupling_terms[index_tuple] = line[1]
 
     return
 
