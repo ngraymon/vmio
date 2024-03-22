@@ -287,52 +287,69 @@ def extract_string_list(path, memmap, header_index=2):
 
 
 def extract_electronic_transition_dipole_moments(path, memmap, dipole_moments):
-    """calls extract_string_list() with appropriate parameters so as to fill the dipole moments array with values from the *.op file"""
+    """calls extract_string_list() with appropriate parameters
+    so as to fill the dipole moments array with values from the *.op file
+
+    `dipole_moments` is an array of shape (C, A+1)
+        where C is the number of co-ordinates representing each atom (x,y,z => C = 3)
+        and the second dimension is the number of surfaces PLUS 1 (representing a fictitious ground state)
+    """
     idx = headers.index('Electronic transition moments')
     lines = extract_string_list(path, memmap, header_index=idx)
 
-    coordinate_dimension = dipole_moments.shape[0]
-    exA = excited_electronic_dimension = dipole_moments.shape[1] - 1
-    nof_lines_expected = coordinate_dimension * excited_electronic_dimension
+    # define dimensions
+    C_dim = coordinate_dimension = dipole_moments.shape[0]
+    A_dim = excited_electronic_dimension = dipole_moments.shape[1] - 1
 
+    # double check
+    nof_lines_expected = C_dim * A_dim
     assert len(lines) == nof_lines_expected, (
         f"The file is malformed check the path {path}.\n"
-        f"We expected {nof_lines_expected} lines but instead got {len(lines)}."
-        f"\nWe should have {excited_electronic_dimension} values for each of the {coordinate_dimension} dimensions"
+        f"We expected {nof_lines_expected=} lines but instead got {len(lines)}."
+        f"\nWe should have {excited_electronic_dimension=} values for each of the {coordinate_dimension=} dimensions"
         "\nDid you not specify the correct number of dimensions?"
     )
 
+    # read in TDM values
     for c in range(coordinate_dimension):
         for a in range(excited_electronic_dimension):
-            label, number, *_ = lines[a + (c*exA)]
-            assert ('Ex' in label) or ('Ey' in label) or ('Ez' in label)
-            assert label[2:] == f"_s00_s{a+1:02}"
+            label, number, *_ = lines[a + (c*A_dim)]
+            assert ('Ex' in label) or ('Ey' in label) or ('Ez' in label), \f"{label=}{number=} does not contain Ex/Ey/Ez ?!\n{lines=}"
+            assert label[2:] == f"_s00_s{a+1:02}", f"Label is malformed? We expect \n{label[0:2]}_s00_s{a+1:02}\nbut got\n{label=}"
             dipole_moments[c, a] = complex(number)
 
     return
 
 
 def extract_magnetic_transition_dipole_moments(path, memmap, dipole_moments):
-    """calls extract_string_list() with appropriate parameters so as to fill the dipole moments array with values from the *.op file"""
+    """calls extract_string_list() with appropriate parameters
+    so as to fill the dipole moments array with values from the *.op file
+
+    `dipole_moments` is an array of shape (C, A+1)
+        where C is the number of co-ordinates representing each atom (x,y,z => C = 3)
+        and the second dimension is the number of surfaces PLUS 1 (representing a fictitious ground state)
+    """
     idx = headers.index('Magnetic transition moments')
     lines = extract_string_list(path, memmap, header_index=idx)
 
-    coordinate_dimension = dipole_moments.shape[0]
-    exA = excited_electronic_dimension = dipole_moments.shape[1] - 1
-    nof_lines_expected = coordinate_dimension * excited_electronic_dimension
+    # define dimensions
+    C_dim = coordinate_dimension = dipole_moments.shape[0]
+    A_dim = excited_electronic_dimension = dipole_moments.shape[1] - 1
 
+    # double check
+    nof_lines_expected = C_dim * A_dim
     assert len(lines) == nof_lines_expected, (
         f"The file is malformed check the path {path}.\n"
-        f"We expected {nof_lines_expected} lines but instead got {len(lines)}."
-        f"\nWe should have {excited_electronic_dimension} values for each of the {coordinate_dimension} dimensions"
+        f"We expected {nof_lines_expected=} lines but instead got {len(lines)}."
+        f"\nWe should have {excited_electronic_dimension=} values for each of the {coordinate_dimension=} dimensions"
         "\nDid you not specify the correct number of dimensions?"
     )
 
     for c in range(coordinate_dimension):
         for a in range(excited_electronic_dimension):
-            label, number, *_ = lines[a + (c*exA)]
-            assert ('Mx' in label) or ('My' in label) or ('Mz' in label)
-            assert label[2:] == f"_s00_s{a+1:02}"
+            label, number, *_ = lines[a + (c*A_dim)]
+            assert ('Mx' in label) or ('My' in label) or ('Mz' in label), \f"{label=}{number=} does not contain Mx/My/Mz ?!\n{lines=}"
+            assert label[2:] == f"_s00_s{a+1:02}", f"Label is malformed? We expect \n{label[0:2]}_s00_s{a+1:02}\nbut got\n{label=}"
             dipole_moments[c, a] = complex(number)
 
     return
