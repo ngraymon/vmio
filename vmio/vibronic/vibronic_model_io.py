@@ -656,7 +656,7 @@ def swap_coupling_coefficient_axes(model, coeff_order):
     Currently the CC integration code expects the coefficients to have the surface dimensions first.
     When they are read in from the .op file they are the last dimensions.
     Therefore we need to shift their position.
-    We do this by shifting the mode dimensions around the surface dimensions.
+    We do this by shifting the vibrational (mode) dimensions around the surface dimensions.
     """
 
     if coeff_order == 0:
@@ -666,8 +666,8 @@ def swap_coupling_coefficient_axes(model, coeff_order):
     index = VMK.key_list()[coeff_order]
     source_list = [i for i in range(coeff_order)]
     destination_list = [i for i in range(-coeff_order, 0)]
-    log.debug(f"Original electronic dimension(s) indices: {source_list}")
-    log.debug(f"New electronic dimension(s) indices:      {destination_list}")
+    log.debug(f"Original vibrational dimension(s) indices: {source_list}")
+    log.debug(f"New vibrational dimension(s) indices:      {destination_list}")
 
     model[index] = np.moveaxis(model[index], source_list, destination_list)
     return
