@@ -341,7 +341,7 @@ def extract_electronic_transition_dipole_moments(path, memmap, dipole_moments):
     for c in range(coordinate_dimension):
         for a in range(excited_electronic_dimension):
             label, number, *_ = lines[a + (c*A_dim)]
-            assert ('Ex' in label) or ('Ey' in label) or ('Ez' in label), \f"{label=}{number=} does not contain Ex/Ey/Ez ?!\n{lines=}"
+            assert ('Ex' in label) or ('Ey' in label) or ('Ez' in label), f"{label=}{number=} does not contain Ex/Ey/Ez ?!\n{lines=}"
             assert label[2:] == f"_s00_s{a+1:02}", f"Label is malformed? We expect \n{label[0:2]}_s00_s{a+1:02}\nbut got\n{label=}"
             dipole_moments[c, a] = complex(number)
 
@@ -375,7 +375,7 @@ def extract_magnetic_transition_dipole_moments(path, memmap, dipole_moments):
     for c in range(coordinate_dimension):
         for a in range(excited_electronic_dimension):
             label, number, *_ = lines[a + (c*A_dim)]
-            assert ('Mx' in label) or ('My' in label) or ('Mz' in label), \f"{label=}{number=} does not contain Mx/My/Mz ?!\n{lines=}"
+            assert ('Mx' in label) or ('My' in label) or ('Mz' in label), f"{label=}{number=} does not contain Mx/My/Mz ?!\n{lines=}"
             assert label[2:] == f"_s00_s{a+1:02}", f"Label is malformed? We expect \n{label[0:2]}_s00_s{a+1:02}\nbut got\n{label=}"
             dipole_moments[c, a] = complex(number)
 
