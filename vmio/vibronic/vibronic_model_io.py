@@ -50,6 +50,22 @@ def model_shape_dict(A, N):
     return dictionary
 
 
+def soc_model_shape_dict(A, N):
+    """ returns a dictionary with the same keys as the .json file whose values are tuples representing the dimensionality of the associated value in the .json file
+    Takes A - number of surfaces and N - number of modes
+
+    """
+    dictionary = model_shape_dict(A, N)
+    dictionary.update({
+        VMK.S1: (N, A, A),
+        VMK.S2: (N, N, A, A),
+        VMK.S3: (N, N, N, A, A),
+        VMK.S4: (N, N, N, N, A, A),
+    })
+
+    return dictionary
+
+
 def diagonal_model_shape_dict(A, N):
     """ returns a dictionary with the same keys as the .json file whose values are tuples representing the dimensionality of the associated value in the .json file
     Takes A - number of surfaces and N - number of modes
@@ -93,6 +109,25 @@ def model_zeros_template_json_dict(A, N, highest_order=1):
     return dictionary
 
 
+def soc_model_zeros_template_json_dict(A, N, highest_order=1):
+    """ returns a dictionary that is a valid SOC model, where all values (other than states and modes) are set to 0
+    """
+    if highest_order > VMK.max_order():
+        e_str = f"VMK supports at most order {VMK.max_order()} coupling terms, not {highest_order=}\n"
+        raise Exception(e_str)
+
+    # make the dictionary like normal
+    dictionary = model_zeros_template_json_dict(A, N, highest_order=highest_order)
+
+    # add the SOC terms
+    soc_shape = soc_model_shape_dict(A, N)
+    for idx, key in enumerate(VMK.soc_coupling_list()):
+        if idx + 1 <= highest_order:
+            dictionary.update({key: np.zeros(soc_shape[key], dtype=C128)})
+
+    return dictionary
+
+
 def diagonal_model_zeros_template_json_dict(A, N, highest_order=1):
     """ returns a dictionary that is a valid diagonal model, where all values (other than states and modes) are set to 0
     """
@@ -124,6 +159,27 @@ def verify_model_parameters(kwargs):
 
     A, N = _extract_dimensions_from_dictionary(kwargs)
     shape_dict = model_shape_dict(A, N)
+
+    for key, value in kwargs.items():
+        if (key == VMK.A) or (key == VMK.N) or key in [VMK.etdm, VMK.mtdm]:
+            continue
+        elif key in shape_dict:
+            assert kwargs[key].shape == shape_dict[key], \
+                f"{key} has incorrect shape {kwargs[key].shape} instead of {shape_dict[key]}"
+        else:
+            log.debug(f"Found key {key} which is not present in the default dictionary")
+
+    return
+
+
+# alternatively we could add if-statement inside `verify_model_parameters`
+def verify_soc_model_parameters(kwargs):
+    """make sure the provided model parameters follow the file conventions"""
+    assert VMK.N in kwargs, "need the number of modes"
+    assert VMK.A in kwargs, "need the number of surfaces"
+
+    A, N = _extract_dimensions_from_dictionary(kwargs)
+    shape_dict = soc_model_shape_dict(A, N)
 
     for key, value in kwargs.items():
         if (key == VMK.A) or (key == VMK.N) or key in [VMK.etdm, VMK.mtdm]:
@@ -974,21 +1030,26 @@ def create_coupling_from_op_file(dest_path, path_file_op):
 # ------------------------------------------------------------------------
 def _save_to_JSON(path, dictionary):
     dict_copy = copy.deepcopy(dictionary)
-    VMK.change_dictionary_keys_from_enum_members_to_strings(dict_copy)
     """ converts each numpy array to a list so that json can serialize them properly"""
 
     for key, value in list(dict_copy.items()):
         if isinstance(value, (np.ndarray, np.generic)):
             if np.count_nonzero(value) > 0:
-                if key in [VMK.etdm.value, VMK.mtdm.value]:
-                    assert value.shape == (1, dict_copy[VMK.A.value])
+                if key in [VMK.etdm, VMK.mtdm]:
+                    assert value.shape == (1, dict_copy[VMK.A])
                     dict_copy[key] = [[str(n) for n in value[i, :].tolist()] for i in range(value.shape[0])]
+                elif key in VMK.soc_coupling_list():
+                    # cast the values to string then store as list
+                    dict_copy[key] = value.astype('str').tolist()
                 else:
                     dict_copy[key] = value.tolist()
             else:
                 del dict_copy[key]
         else:
             log.debug(f"Value {value} with Key {key} does not appear to be an ndarray")
+
+    # change enum keys to strings JUST before saving to JSON
+    VMK.change_dictionary_keys_from_enum_members_to_strings(dict_copy)
 
     with open(path, mode='w', encoding='UTF8') as target_file:
         target_file.write(json.dumps(dict_copy))
@@ -1060,6 +1121,9 @@ def _load_from_JSON(path):
                 # the complex numbers are stored as strings in the JSON file
                 value = [[*map(complex, row)] for row in value]
                 input_dictionary[key] = np.array(value, dtype=C128)
+            elif key in VMK.soc_coupling_list():
+                # the SOC terms are also complex
+                input_dictionary[key] = np.array(value, dtype=C128)
             else:
                 # the rest of the model is doubles
                 input_dictionary[key] = np.array(value, dtype=F64)
@@ -1069,6 +1133,12 @@ def _load_from_JSON(path):
         A, N = _extract_dimensions_from_dictionary(input_dictionary)
         shape = model_shape_dict(A, N)
         input_dictionary[VMK.E] = np.zeros(shape[VMK.E], dtype=F64)
+
+    # special case to always create an array of frequencies that are 0.0 if not provided in the .json file
+    if VMK.w not in input_dictionary:
+        A, N = _extract_dimensions_from_dictionary(input_dictionary)
+        shape = model_shape_dict(A, N)
+        input_dictionary[VMK.w] = np.zeros(shape[VMK.w], dtype=F64)
 
     # TODO - design decision about which arrays to fill with zeros by default?
 
@@ -1188,16 +1258,62 @@ def print_model(model, highest_order=None):
     )
 
     for key in [VMK.w, VMK.etdm, VMK.mtdm, VMK.E]:
-        print(f"{key.value}  {model[key].shape}\n{model[key]}\n")
+        if key not in model:
+            print(f"{key.value} not present in model\n")
+        else:
+            print(f"{key.value}  {model[key].shape}\n{model[key]}\n")
 
     if highest_order is None:
         highest_order = extract_maximum_order_of_model(model)
 
     for idx, key in enumerate(VMK.coupling_list()):
         if idx + 1 <= highest_order:
-            print(f"{key.value}  {model[key].shape}\n{model[key]}\n")
+            if key not in model:
+                print(f"{key} not present in model\n")
+            else:
+                print(f"{key.value}  {model[key].shape}\n{model[key]}\n")
+
+    for idx, key in enumerate(VMK.soc_coupling_list()):
+        if idx + 1 <= highest_order:
+            if key not in model:
+                print(f"{key.value} not present in model\n")
+            else:
+                print(f"{key.value}  {model[key].shape}\n{model[key]}\n")
     return
 
+
+def print_model_compact(model, highest_order=None):
+    """Prints all arguments of the `model` up to `highest_order` """
+    print(
+        f"{VMK.A.value:<20}{model[VMK.A]}",
+        f"{VMK.N.value:<20}{model[VMK.N]}\n",
+        sep='\n'
+    )
+
+    for key in [VMK.w, VMK.etdm, VMK.mtdm, VMK.E]:
+        name = key.value.replace('transition dipole moments', 'TDM')
+        if key not in model:
+            print(f"{name:<28s} not present in model")
+        else:
+            print(f"{name:<28s} {model[key].shape}")
+
+    if highest_order is None:
+        highest_order = extract_maximum_order_of_model(model)
+
+    for idx, key in enumerate(VMK.coupling_list()):
+        if idx + 1 <= highest_order:
+            if key not in model:
+                print(f"{key.value:<28s} not present in model")
+            else:
+                print(f"{key.value:<28s} {model[key].shape}")
+
+    for idx, key in enumerate(VMK.soc_coupling_list()):
+        if idx + 1 <= highest_order:
+            if key not in model:
+                print(f"{key.value:<28s} not present in model")
+            else:
+                print(f"{key.value:<28s} {model[key].shape:}")
+    return
 
 # ------------------------------------------------------------------------
 def main():
