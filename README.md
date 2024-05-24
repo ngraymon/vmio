@@ -18,8 +18,11 @@ The code drives the following papers:
 [![DOI Link](https://img.shields.io/badge/DOI-10.1063%2F1.5025058-blue.svg)](https://doi.org/10.1063/1.5025058)
 - VECC
 [![arXiv Link](https://img.shields.io/badge/arXiv%3A-2312.14164-blue.svg)](https://arxiv.org/abs/2312.14164)
+[![DOI Link](https://img.shields.io/badge/DOI-10.1063%2F5.0190034-blue.svg)](https://doi.org/10.1063/5.0190034)
+
+- VE-TFCC
 (*accepted*, doi forthcoming)
-- TF-VECC
-(manuscript in revision)
-
-
+<!-- 
+[![arXiv Link](https://img.shields.io/badge/arXiv%3A-2312.14164-blue.svg)](https://arxiv.org/abs/2312.14164)
+[![DOI Link](https://img.shields.io/badge/DOI-10.1063%2F5.0190034-blue.svg)](https://doi.org/10.1021/acs.jctc.4c00338)
+-->
