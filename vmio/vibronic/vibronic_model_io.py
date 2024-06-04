@@ -37,8 +37,8 @@ def model_shape_dict(A, N):
 
     """
     dictionary = {
-        VMK.etdm: (1, A),
-        VMK.mtdm: (1, A),
+        VMK.etdm: (3, A),
+        VMK.mtdm: (3, A),
         VMK.E: (A, A),
         VMK.w: (N, ),
         VMK.G1: (N, A, A),
@@ -72,8 +72,8 @@ def diagonal_model_shape_dict(A, N):
 
     """
     dictionary = {
-        VMK.etdm: (1, A),
-        VMK.mtdm: (1, A),
+        VMK.etdm: (3, A),
+        VMK.mtdm: (3, A),
         VMK.E: (A, ),
         VMK.w: (N, ),
         VMK.G1: (N, A),
@@ -161,11 +161,12 @@ def verify_model_parameters(kwargs):
     shape_dict = model_shape_dict(A, N)
 
     for key, value in kwargs.items():
-        if (key == VMK.A) or (key == VMK.N) or key in [VMK.etdm, VMK.mtdm]:
+        if (key == VMK.A) or (key == VMK.N):
             continue
         elif key in shape_dict:
-            assert kwargs[key].shape == shape_dict[key], \
+            assert kwargs[key].shape == shape_dict[key], (
                 f"{key} has incorrect shape {kwargs[key].shape} instead of {shape_dict[key]}"
+            )
         else:
             log.debug(f"Found key {key} which is not present in the default dictionary")
 
@@ -182,11 +183,12 @@ def verify_soc_model_parameters(kwargs):
     shape_dict = soc_model_shape_dict(A, N)
 
     for key, value in kwargs.items():
-        if (key == VMK.A) or (key == VMK.N) or key in [VMK.etdm, VMK.mtdm]:
+        if (key == VMK.A) or (key == VMK.N):
             continue
         elif key in shape_dict:
-            assert kwargs[key].shape == shape_dict[key], \
+            assert kwargs[key].shape == shape_dict[key], (
                 f"{key} has incorrect shape {kwargs[key].shape} instead of {shape_dict[key]}"
+            )
         else:
             log.debug(f"Found key {key} which is not present in the default dictionary")
 
@@ -205,8 +207,9 @@ def verify_diagonal_model_parameters(kwargs):
         if (key == VMK.A) or (key == VMK.N):
             continue
         elif key in shape_dict:
-            assert kwargs[key].shape == shape_dict[key], \
+            assert kwargs[key].shape == shape_dict[key], (
                 f"{key} has incorrect shape {kwargs[key].shape} instead of {shape_dict[key]}"
+            )
         else:
             log.debug(f"Found key {key} which is not present in the default dictionary")
 
@@ -521,10 +524,12 @@ def model_remove_ground_state(old_model, **kwargs):
 
     # unfortunately we have to cheat for now and we will fix it later
     if VMK.etdm in old_model:
-        new_model[VMK.etdm] = np.zeros((old_model[VMK.etdm].shape[0], A), dtype=C128)
+        dim = (old_model[VMK.etdm].shape[0], A)
+        new_model[VMK.etdm] = np.zeros(dim, dtype=C128)
 
     if VMK.mtdm in old_model:
-        new_model[VMK.mtdm] = np.zeros((old_model[VMK.mtdm].shape[0], A), dtype=C128)
+        dim = (old_model[VMK.mtdm].shape[0], A)
+        new_model[VMK.mtdm] = np.zeros(dim, dtype=C128)
 
     print(old_model.keys())
 
@@ -568,10 +573,12 @@ def diagonal_model_add_surface(old_model, **kwargs):
 
     # unfortunately we have to cheat for now and we will fix it later
     if VMK.etdm in old_model:
-        new_model[VMK.etdm] = np.zeros((old_model[VMK.etdm].shape[0], A), dtype=C128)
+        dim = (old_model[VMK.etdm].shape[0], A)
+        new_model[VMK.etdm] = np.zeros(dim, dtype=C128)
 
     if VMK.mtdm in old_model:
-        new_model[VMK.mtdm] = np.zeros((old_model[VMK.mtdm].shape[0], A), dtype=C128)
+        dim = (old_model[VMK.mtdm].shape[0], A)
+        new_model[VMK.mtdm] = np.zeros(dim, dtype=C128)
 
     # transition dipole moment
     for a in range(old_A):
@@ -1036,10 +1043,23 @@ def _save_to_JSON(path, dictionary):
         if isinstance(value, (np.ndarray, np.generic)):
             if np.count_nonzero(value) > 0:
                 if key in [VMK.etdm, VMK.mtdm]:
-                    assert value.shape == (1, dict_copy[VMK.A])
-                    dict_copy[key] = [[str(n) for n in value[i, :].tolist()] for i in range(value.shape[0])]
+
+                    # validation (temporary fix)
+                    assert len(value.shape) == 2, f"{value.shape=} is not 2 dimensional?"
+                    xyz, A = value.shape
+
+                    assert xyz in [1, 2, 3], f"dim1 (x,y,z) {value.shape[0]=} can only be 1,2, or 3"
+                    assert A == dict_copy[VMK.A.value], f"dim2 {value.shape[1]=} is not {dict_copy[VMK.A.value]}"
+
+                    # convert to a list of lists containing strings
+                    dict_copy[key] = [
+                        [str(v) for v in value[i, :].tolist()]
+                        for i in range(xyz)
+                    ]
+
                 elif key in VMK.soc_coupling_list():
                     # cast the values to string then store as list
+                    # because all the SOC couplings are complex #'s
                     dict_copy[key] = value.astype('str').tolist()
                 else:
                     dict_copy[key] = value.tolist()
