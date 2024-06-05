@@ -1049,7 +1049,7 @@ def _save_to_JSON(path, dictionary):
                     xyz, A = value.shape
 
                     assert xyz in [1, 2, 3], f"dim1 (x,y,z) {value.shape[0]=} can only be 1,2, or 3"
-                    assert A == dict_copy[VMK.A.value], f"dim2 {value.shape[1]=} is not {dict_copy[VMK.A.value]}"
+                    assert A == dict_copy[VMK.A], f"dim2 {value.shape[1]=} is not {dict_copy[VMK.A]}"
 
                     # convert to a list of lists containing strings
                     dict_copy[key] = [
