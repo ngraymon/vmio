@@ -57,6 +57,7 @@ def soc_model_shape_dict(A, N):
     """
     dictionary = model_shape_dict(A, N)
     dictionary.update({
+        VMK.S0: (A, A),
         VMK.S1: (N, A, A),
         VMK.S2: (N, N, A, A),
         VMK.S3: (N, N, N, A, A),
@@ -122,7 +123,7 @@ def soc_model_zeros_template_json_dict(A, N, highest_order=1):
     # add the SOC terms
     soc_shape = soc_model_shape_dict(A, N)
     for idx, key in enumerate(VMK.soc_coupling_list()):
-        if idx + 1 <= highest_order:
+        if idx <= highest_order:
             dictionary.update({key: np.zeros(soc_shape[key], dtype=C128)})
 
     return dictionary
@@ -733,6 +734,17 @@ def swap_coupling_coefficient_axes(model, coeff_order):
     log.debug(f"New vibrational dimension(s) indices:      {destination_list}")
 
     model[index] = np.moveaxis(model[index], source_list, destination_list)
+
+    # if SOC is present
+    index = VMK.soc_coupling_list()[coeff_order]
+    source_list = [i for i in range(coeff_order)]
+    if index in model.keys():
+        destination_list = [i for i in range(-coeff_order, 0)]
+        log.debug(f"Original SOC vibrational dimension(s) indices: {source_list}")
+        log.debug(f"New SOC vibrational dimension(s) indices:      {destination_list}")
+
+        model[index] = np.moveaxis(model[index], source_list, destination_list)
+
     return
 
 
@@ -743,6 +755,7 @@ def unswap_coupling_coefficient_axes(model, coeff_order):
     Therefore we need to shift their position.
     We do this by shifting the mode dimensions around the surface dimensions.
     """
+    assert False, "Likely old code, no longer supported, not used in vibronic_hamiltonian.py currently"
 
     if coeff_order == 0:
         return  # no need to change order if their are no coupling coefficients
@@ -760,6 +773,7 @@ def unswap_coupling_coefficient_axes(model, coeff_order):
 
 def temp_unswap_model_from_cc_integration(model, highest_order):
     """Removes extra parameters from .op file and reshapes the coupling coefficient tensors."""
+    assert False, "Likely old code, no longer supported, not used in vibronic_hamiltonian.py currently"
 
     # we are only handling the linear and quadratic terms at the moment
     for index in [1, 2]:
@@ -1068,7 +1082,7 @@ def _save_to_JSON(path, dictionary):
         else:
             log.debug(f"Value {value} with Key {key} does not appear to be an ndarray")
 
-    # change enum keys to strings JUST before saving to JSON
+    # change enum keys to string keys JUST before saving to JSON
     VMK.change_dictionary_keys_from_enum_members_to_strings(dict_copy)
 
     with open(path, mode='w', encoding='UTF8') as target_file:
@@ -1103,6 +1117,7 @@ def _load_inplace_from_JSON(path, dictionary):
     with open(path, mode='r', encoding='UTF8') as file:
         input_dictionary = json.loads(file.read())
 
+    # change string keys to enum keys right after loading
     VMK.change_dictionary_keys_from_strings_to_enum_members(input_dictionary)
 
     for key, value in dictionary.items():
