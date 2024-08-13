@@ -21,8 +21,7 @@ The code drives the following papers:
 [![DOI Link](https://img.shields.io/badge/DOI-10.1063%2F5.0190034-blue.svg)](https://doi.org/10.1063/5.0190034)
 
 - VE-TFCC
-(*accepted*, doi forthcoming)
-<!-- 
-[![arXiv Link](https://img.shields.io/badge/arXiv%3A-2312.14164-blue.svg)](https://arxiv.org/abs/2312.14164)
-[![DOI Link](https://img.shields.io/badge/DOI-10.1063%2F5.0190034-blue.svg)](https://doi.org/10.1021/acs.jctc.4c00338)
--->
+[![DOI Link](https://img.shields.io/badge/DOI-10.1021%2Facs.jctc.4c00338-blue.svg)](https://doi.org/10.1021/acs.jctc.4c00338)
+<!-- [![arXiv Link](https://img.shields.io/badge/arXiv%3A-XXXXXXXXX-blue.svg)](https://arxiv.org/abs/XXXXXXXXX) --> 
+
+
