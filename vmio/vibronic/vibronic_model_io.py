@@ -126,11 +126,12 @@ def verify_model_parameters(kwargs):
     shape_dict = model_shape_dict(A, N)
 
     for key, value in kwargs.items():
-        if (key == VMK.A) or (key == VMK.N) or key in [VMK.etdm, VMK.mtdm]:
+        if (key == VMK.A) or (key == VMK.N):
             continue
         elif key in shape_dict:
-            assert kwargs[key].shape == shape_dict[key], \
+            assert kwargs[key].shape == shape_dict[key], (
                 f"{key} has incorrect shape {kwargs[key].shape} instead of {shape_dict[key]}"
+            )
         else:
             log.debug(f"Found key {key} which is not present in the default dictionary")
 
@@ -149,8 +150,9 @@ def verify_diagonal_model_parameters(kwargs):
         if (key == VMK.A) or (key == VMK.N):
             continue
         elif key in shape_dict:
-            assert kwargs[key].shape == shape_dict[key], \
+            assert kwargs[key].shape == shape_dict[key], (
                 f"{key} has incorrect shape {kwargs[key].shape} instead of {shape_dict[key]}"
+            )
         else:
             log.debug(f"Found key {key} which is not present in the default dictionary")
 
@@ -465,10 +467,12 @@ def model_remove_ground_state(old_model, **kwargs):
 
     # unfortunately we have to cheat for now and we will fix it later
     if VMK.etdm in old_model:
-        new_model[VMK.etdm] = np.zeros((old_model[VMK.etdm].shape[0], A), dtype=C128)
+        dim = (old_model[VMK.etdm].shape[0], A)
+        new_model[VMK.etdm] = np.zeros(dim, dtype=C128)
 
     if VMK.mtdm in old_model:
-        new_model[VMK.mtdm] = np.zeros((old_model[VMK.mtdm].shape[0], A), dtype=C128)
+        dim = (old_model[VMK.mtdm].shape[0], A)
+        new_model[VMK.mtdm] = np.zeros(dim, dtype=C128)
 
     print(old_model.keys())
 
@@ -512,10 +516,12 @@ def diagonal_model_add_surface(old_model, **kwargs):
 
     # unfortunately we have to cheat for now and we will fix it later
     if VMK.etdm in old_model:
-        new_model[VMK.etdm] = np.zeros((old_model[VMK.etdm].shape[0], A), dtype=C128)
+        dim = (old_model[VMK.etdm].shape[0], A)
+        new_model[VMK.etdm] = np.zeros(dim, dtype=C128)
 
     if VMK.mtdm in old_model:
-        new_model[VMK.mtdm] = np.zeros((old_model[VMK.mtdm].shape[0], A), dtype=C128)
+        dim = (old_model[VMK.mtdm].shape[0], A)
+        new_model[VMK.mtdm] = np.zeros(dim, dtype=C128)
 
     # transition dipole moment
     for a in range(old_A):
@@ -680,6 +686,7 @@ def unswap_coupling_coefficient_axes(model, coeff_order):
     Therefore we need to shift their position.
     We do this by shifting the mode dimensions around the surface dimensions.
     """
+    assert False, "Likely old code, no longer supported, not used in vibronic_hamiltonian.py currently"
 
     if coeff_order == 0:
         return  # no need to change order if their are no coupling coefficients
@@ -697,6 +704,7 @@ def unswap_coupling_coefficient_axes(model, coeff_order):
 
 def temp_unswap_model_from_cc_integration(model, highest_order):
     """Removes extra parameters from .op file and reshapes the coupling coefficient tensors."""
+    assert False, "Likely old code, no longer supported, not used in vibronic_hamiltonian.py currently"
 
     # we are only handling the linear and quadratic terms at the moment
     for index in [1, 2]:
@@ -979,9 +987,21 @@ def _save_to_JSON(path, dictionary):
     for key, value in list(dict_copy.items()):
         if isinstance(value, (np.ndarray, np.generic)):
             if np.count_nonzero(value) > 0:
-                if key in [VMK.etdm.value, VMK.mtdm.value]:
-                    assert value.shape == (1, dict_copy[VMK.A.value])
-                    dict_copy[key] = [[str(n) for n in value[i, :].tolist()] for i in range(value.shape[0])]
+                if key in [VMK.etdm, VMK.mtdm]:
+
+                    # validation (temporary fix)
+                    assert len(value.shape) == 2, f"{value.shape=} is not 2 dimensional?"
+                    xyz, A = value.shape
+
+                    assert xyz in [1, 2, 3], f"dim1 (x,y,z) {value.shape[0]=} can only be 1,2, or 3"
+                    assert A == dict_copy[VMK.A], f"dim2 {value.shape[1]=} is not {dict_copy[VMK.A]}"
+
+                    # convert to a list of lists containing strings
+                    dict_copy[key] = [
+                        [str(v) for v in value[i, :].tolist()]
+                        for i in range(xyz)
+                    ]
+
                 else:
                     dict_copy[key] = value.tolist()
             else:
@@ -1024,6 +1044,7 @@ def _load_inplace_from_JSON(path, dictionary):
     with open(path, mode='r', encoding='UTF8') as file:
         input_dictionary = json.loads(file.read())
 
+    # change string keys to enum keys immediately after loading
     VMK.change_dictionary_keys_from_strings_to_enum_members(input_dictionary)
 
     for key, value in dictionary.items():
@@ -1206,10 +1227,6 @@ def print_model(model, highest_order=None):
 
     for idx, key in enumerate(VMK.coupling_list()):
         if idx + 1 <= highest_order:
-            print(f"{key.value}  {model[key].shape}\n{model[key]}\n")
-
-    for idx, key in enumerate(VMK.coupling_list()):
-        if idx + 1 <= highest_order:
             if key not in model:
                 print(f"{key} not present in model\n")
             else:
@@ -1243,7 +1260,6 @@ def print_model_compact(model, highest_order=None):
                 print(f"{key.value:<28s} {model[key].shape}")
 
     return
-
 
 # ------------------------------------------------------------------------
 def main():
