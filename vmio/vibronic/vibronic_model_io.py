@@ -973,9 +973,8 @@ def create_coupling_from_op_file(dest_path, path_file_op):
 # Functions which handle I/O with files ending in `.json`
 # ------------------------------------------------------------------------
 def _save_to_JSON(path, dictionary):
-    dict_copy = copy.deepcopy(dictionary)
-    VMK.change_dictionary_keys_from_enum_members_to_strings(dict_copy)
     """ converts each numpy array to a list so that json can serialize them properly"""
+    dict_copy = copy.deepcopy(dictionary)
 
     for key, value in list(dict_copy.items()):
         if isinstance(value, (np.ndarray, np.generic)):
@@ -989,6 +988,9 @@ def _save_to_JSON(path, dictionary):
                 del dict_copy[key]
         else:
             log.debug(f"Value {value} with Key {key} does not appear to be an ndarray")
+
+    # change enum keys to string keys JUST before saving to JSON
+    VMK.change_dictionary_keys_from_enum_members_to_strings(dict_copy)
 
     with open(path, mode='w', encoding='UTF8') as target_file:
         target_file.write(json.dumps(dict_copy))
