@@ -1072,6 +1072,12 @@ def _load_from_JSON(path):
         shape = model_shape_dict(A, N)
         input_dictionary[VMK.E] = np.zeros(shape[VMK.E], dtype=F64)
 
+    # special case to always create an array of frequencies that are 0.0 if not provided in the .json file
+    if VMK.w not in input_dictionary:
+        A, N = _extract_dimensions_from_dictionary(input_dictionary)
+        shape = model_shape_dict(A, N)
+        input_dictionary[VMK.w] = np.zeros(shape[VMK.w], dtype=F64)
+
     # TODO - design decision about which arrays to fill with zeros by default?
 
     return input_dictionary
@@ -1190,7 +1196,10 @@ def print_model(model, highest_order=None):
     )
 
     for key in [VMK.w, VMK.etdm, VMK.mtdm, VMK.E]:
-        print(f"{key.value}  {model[key].shape}\n{model[key]}\n")
+        if key not in model:
+            print(f"{key.value} not present in model\n")
+        else:
+            print(f"{key.value}  {model[key].shape}\n{model[key]}\n")
 
     if highest_order is None:
         highest_order = extract_maximum_order_of_model(model)
@@ -1198,6 +1207,41 @@ def print_model(model, highest_order=None):
     for idx, key in enumerate(VMK.coupling_list()):
         if idx + 1 <= highest_order:
             print(f"{key.value}  {model[key].shape}\n{model[key]}\n")
+
+    for idx, key in enumerate(VMK.coupling_list()):
+        if idx + 1 <= highest_order:
+            if key not in model:
+                print(f"{key} not present in model\n")
+            else:
+                print(f"{key.value}  {model[key].shape}\n{model[key]}\n")
+    return
+
+
+def print_model_compact(model, highest_order=None):
+    """Prints all arguments of the `model` up to `highest_order` """
+    print(
+        f"{VMK.A.value:<20}{model[VMK.A]}",
+        f"{VMK.N.value:<20}{model[VMK.N]}\n",
+        sep='\n'
+    )
+
+    for key in [VMK.w, VMK.etdm, VMK.mtdm, VMK.E]:
+        name = key.value.replace('transition dipole moments', 'TDM')
+        if key not in model:
+            print(f"{name:<28s} not present in model")
+        else:
+            print(f"{name:<28s} {model[key].shape}")
+
+    if highest_order is None:
+        highest_order = extract_maximum_order_of_model(model)
+
+    for idx, key in enumerate(VMK.coupling_list()):
+        if idx + 1 <= highest_order:
+            if key not in model:
+                print(f"{key.value:<28s} not present in model")
+            else:
+                print(f"{key.value:<28s} {model[key].shape}")
+
     return
 
 
